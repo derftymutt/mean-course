@@ -10,3 +10,12 @@
 mat-spinner {
   margin: auto;
 }
+
+.post-image {
+  width: 100%;
+}
+
+.post-image img {
+  width: 100%;
+  box-shadow: 3px 3px 10px rgba(200, 0, 0, 5)
+}
