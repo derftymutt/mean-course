@@ -15,20 +15,23 @@ const storage = multer.diskStorage({
     const isValid = MIME_TYPE_MAP[file.mimetype];
     let error = new Error('Invalid mime type');
     if (isValid) {
-      error = null
+      error = null;
     }
 
-    callback(error, 'backend/images')
+    callback(error, 'backend/images');
   },
   filename: (req, file, callback) => {
-    const name = file.originalname.toLowerCase().split(' ').join('-');
+    const name = file.originalname
+      .toLowerCase()
+      .split(' ')
+      .join('-');
     const ext = MIME_TYPE_MAP[file.mimetype];
 
     callback(null, `${name}-${Date.now()}.${ext}`);
   }
 });
 
-router.post('', multer({storage: storage}).single('image'), (req, res, next) => {
+router.post('', multer({ storage: storage }).single('image'), (req, res, next) => {
   const url = `${req.protocol}://${req.get('host')}`;
 
   const post = new Post({
@@ -39,23 +42,38 @@ router.post('', multer({storage: storage}).single('image'), (req, res, next) => 
 
   post.save().then(createdPost => {
     res.status(201).json({
-      message: "post added successfully",
+      message: 'post added successfully',
       post: {
         ...createdPost,
         id: createdPost._id
       }
     });
   });
-
 });
 
 router.get('', (req, res, next) => {
-  Post.find().then(documents => {
-    res.status(200).json({
-      message: "Posts fetched successfully",
-      posts: documents
+  const pageSize = +req.query.pagesize;
+  const currentPage = +req.query.page;
+  const postQuery = Post.find();
+  let fetchedPosts;
+
+  if (pageSize && currentPage) {
+    postQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
+  }
+
+  postQuery
+    .find()
+    .then(documents => {
+      fetchedPosts = documents;
+      return Post.count();
+    })
+    .then(count => {
+      res.status(200).json({
+        message: 'Posts fetched successfully',
+        posts: fetchedPosts,
+        maxPosts: count
+      });
     });
-  });
 });
 
 router.get('/:id', (req, res, next) => {
@@ -63,12 +81,12 @@ router.get('/:id', (req, res, next) => {
     if (post) {
       res.status(200).json(post);
     } else {
-      res.status(404).json({ message: 'Post not found'});
+      res.status(404).json({ message: 'Post not found' });
     }
   });
-})
+});
 
-router.put('/:id', multer({storage: storage}).single('image'), (req, res, next) => {
+router.put('/:id', multer({ storage: storage }).single('image'), (req, res, next) => {
   let imagePath = req.body.imagePath;
   if (req.file) {
     const url = `${req.protocol}://${req.get('host')}`;
@@ -82,16 +100,16 @@ router.put('/:id', multer({storage: storage}).single('image'), (req, res, next) 
   });
   console.log(post);
 
-  Post.updateOne({_id: req.params.id}, post).then(result => {
-    res.status(200).json({ message: 'Update successful'});
-  })
+  Post.updateOne({ _id: req.params.id }, post).then(result => {
+    res.status(200).json({ message: 'Update successful' });
+  });
 });
 
 router.delete('/:id', (req, res, next) => {
   console.log(req.params.id);
   Post.deleteOne({ _id: req.params.id }).then(result => {
     console.log(result);
-    res.status(200).json({ message: 'Post Deleted!'});
+    res.status(200).json({ message: 'Post Deleted!' });
   });
 });
 
