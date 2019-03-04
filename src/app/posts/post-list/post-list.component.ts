@@ -11,7 +11,6 @@ import { AuthService } from 'src/app/auth/auth.service';
   styleUrls: ['./post-list.component.css']
 })
 export class PostListComponent implements OnInit, OnDestroy {
-
   posts: Post[] = [];
   isLoading = false;
   totalPosts = 0;
@@ -23,24 +22,30 @@ export class PostListComponent implements OnInit, OnDestroy {
   private postSub: Subscription;
   private authStatusSubscription: Subscription;
 
-  constructor(private postsService: PostsService, private authService: AuthService) {}
+  constructor(
+    private postsService: PostsService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.isLoading = true;
     this.postsService.getPosts(this.postsPerPage, this.currentPage);
     this.userId = this.authService.getUserId();
-    this.postSub = this.postsService.getPostUpdateListener()
-      .subscribe((postData: {posts: Post[], postCount: number}) => {
+    this.postSub = this.postsService
+      .getPostUpdateListener()
+      .subscribe((postData: { posts: Post[]; postCount: number }) => {
         this.isLoading = false;
         this.posts = postData.posts;
         this.totalPosts = postData.postCount;
-    });
+      });
 
     this.isUserAuthenticated = this.authService.getIsAuth();
-    this.authStatusSubscription = this.authService.getAuthStatusListener().subscribe(isAuthenticated => {
-      this.isUserAuthenticated = isAuthenticated;
-      this.userId = this.authService.getUserId();
-    });
+    this.authStatusSubscription = this.authService
+      .getAuthStatusListener()
+      .subscribe(isAuthenticated => {
+        this.isUserAuthenticated = isAuthenticated;
+        this.userId = this.authService.getUserId();
+      });
   }
 
   ngOnDestroy() {
@@ -49,9 +54,14 @@ export class PostListComponent implements OnInit, OnDestroy {
   }
 
   public onDelete(id: string) {
-    this.postsService.deletePost(id).subscribe(() => {
-      this.postsService.getPosts(this.postsPerPage, this.currentPage);
-    });
+    this.postsService.deletePost(id).subscribe(
+      () => {
+        this.postsService.getPosts(this.postsPerPage, this.currentPage);
+      },
+      () => {
+        this.isLoading = false;
+      }
+    );
   }
 
   onChangedPage(pageData: PageEvent) {
